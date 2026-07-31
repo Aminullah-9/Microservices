@@ -1,24 +1,30 @@
 ﻿using Order.DTO;
 using Order.Model;
 using Order.Repository;
+using Order.Repository.Interfaces;
 using Order.Services.Interfaces;
+using System.Reflection.Metadata.Ecma335;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Order.Services
 {
     public class OrderService : IOrderService
     {
-        private readonly OrderRepository _orderService;
+        private readonly IOrderRepository _orderRepository;
+        private readonly HttpClient _httpClient;
 
-        public OrderService(OrderRepository orderService)
+        public OrderService(HttpClient httpClient, IOrderRepository orderRepository)
         {
-            _orderService = orderService;
+            _httpClient = httpClient;
+            _orderRepository = orderRepository;
         }
 
-        public async Task<List<OrderResponseDTO>> GetOrders()
-        {
-            var orders = await _orderService.GetOrder();
 
-            return orders.Select(x => new OrderResponseDTO
+        public async Task<ApiResponse<List<OrderResponseDTO>>> GetOrders()
+        {
+            var orders = await _orderRepository.GetOrders();
+
+            var data = orders.Select(x => new OrderResponseDTO
             {
                 OrderId = x.OrderId,
                 ProductId = x.ProductId,
@@ -27,16 +33,30 @@ namespace Order.Services
                 prices = x.prices,
                 Quantity = x.Quantity
             }).ToList();
+
+            return new ApiResponse<List<OrderResponseDTO>>
+            {
+                Success = true,
+                Message = "Orders fetched successfully.",
+                Data = data
+            };
         }
 
-        public async Task<OrderResponseDTO?> GetOrderbyId(int id)
+        public async Task<ApiResponse<OrderResponseDTO>> GetOrderById(int id)
         {
-            var order = await _orderService.GetOrderById(id);
+            var order = await _orderRepository.GetOrderById(id);
+
             if (order == null)
             {
-                return null;
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Order not found.",
+                    Data = null
+                };
             }
-            return new OrderResponseDTO
+
+            var data = new OrderResponseDTO
             {
                 OrderId = order.OrderId,
                 ProductId = order.ProductId,
@@ -45,35 +65,109 @@ namespace Order.Services
                 prices = order.prices,
                 Quantity = order.Quantity
             };
+
+            return new ApiResponse<OrderResponseDTO>
+            {
+                Success = true,
+                Message = "Order fetched successfully.",
+                Data = data
+            };
         }
 
-        public async Task<OrderResponseDTO> CreateOrder(OrderCreateDTO orderCreateDTO)
+        public async Task<ApiResponse<OrderResponseDTO>> CreateOrder(OrderCreateDTO orderCreateDTO)
         {
-            var Order = new OrderModel
+            if (orderCreateDTO.ProductId <= 0)
             {
-                OrderId = orderCreateDTO.OrderId,
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Invalid Product Id.",
+                    Data = null
+                };
+            }
+
+            if (orderCreateDTO.Quantity <= 0)
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Quantity must be greater than zero.",
+                    Data = null
+                };
+            }
+
+
+            var product = await GetProductFromProductService(orderCreateDTO.ProductId);
+
+            if (product == null)
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Product does not exist.",
+                    Data = null
+                };
+            }
+
+
+            if (orderCreateDTO.Quantity > product.ProductQuantity)
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Requested quantity is greater than available stock.",
+                    Data = null
+                };
+            }
+
+
+            var order = new OrderModel
+            {
                 ProductId = orderCreateDTO.ProductId,
                 OrderDate = orderCreateDTO.OrderDate,
                 IsPaid = orderCreateDTO.IsPaid,
                 prices = orderCreateDTO.prices,
                 Quantity = orderCreateDTO.Quantity
             };
-            await _orderService.CreateOrder(Order);
 
-            return new OrderResponseDTO
+
+            await _orderRepository.CreateOrder(order);
+
+
+            var data = new OrderResponseDTO
             {
-                OrderId = Order.OrderId,
-                ProductId = Order.ProductId,
-                OrderDate = Order.OrderDate,
-                IsPaid = Order.IsPaid,
-                prices = Order.prices,
-                Quantity = Order.Quantity
+                OrderId = order.OrderId,
+                ProductId = order.ProductId,
+                OrderDate = order.OrderDate,
+                IsPaid = order.IsPaid,
+                prices = order.prices,
+                Quantity = order.Quantity
+            };
+
+
+            return new ApiResponse<OrderResponseDTO>
+            {
+                Success = true,
+                Message = "Order created successfully.",
+                Data = data
             };
         }
-
-        public async Task<OrderResponseDTO> UpdateOrder(OrderUpdateDTO orderUpdateDTO)
+        public async Task<ApiResponse<OrderResponseDTO>> UpdateOrder(OrderUpdateDTO orderUpdateDTO)
         {
-            var Order = new OrderModel
+            var existingOrder = await _orderRepository.GetOrderById(orderUpdateDTO.OrderId);
+
+            if (existingOrder == null)
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Order not found.",
+                    Data = null
+                };
+            }
+
+
+            var order = new OrderModel
             {
                 OrderId = orderUpdateDTO.OrderId,
                 ProductId = orderUpdateDTO.ProductId,
@@ -82,21 +176,68 @@ namespace Order.Services
                 prices = orderUpdateDTO.prices,
                 Quantity = orderUpdateDTO.Quantity
             };
-            await _orderService.UpdateOrder(Order);
 
-            return new OrderResponseDTO
+
+            await _orderRepository.UpdateOrder(order);
+
+
+            var data = new OrderResponseDTO
             {
-                OrderId = Order.OrderId,
-                ProductId = Order.ProductId,
-                OrderDate = Order.OrderDate,
-                IsPaid = Order.IsPaid,
-                prices = Order.prices,
-                Quantity = Order.Quantity
+                OrderId = order.OrderId,
+                ProductId = order.ProductId,
+                OrderDate = order.OrderDate,
+                IsPaid = order.IsPaid,
+                prices = order.prices,
+                Quantity = order.Quantity
+            };
+
+
+            return new ApiResponse<OrderResponseDTO>
+            {
+                Success = true,
+                Message = "Order updated successfully.",
+                Data = data
             };
         }
-        public async Task<bool> DeleteOrder(int id)
+        public async Task<ApiResponse<bool>> DeleteOrder(int id)
         {
-            return await _orderService.DeleteOrder(id);
+            var order = await _orderRepository.GetOrderById(id);
+
+            if (order == null)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Order not found.",
+                    Data = false
+                };
+            }
+
+
+            var result = await _orderRepository.DeleteOrder(id);
+
+
+            return new ApiResponse<bool>
+            {
+                Success = result,
+                Message = result
+                    ? "Order deleted successfully."
+                    : "Failed to delete order.",
+                Data = result
+            };
+        }
+        private async Task<ProductResponseDto?> GetProductFromProductService(int productId)
+        {
+            var response = await _httpClient.GetAsync($"https://localhost:7257/api/Product/{productId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var product = await response.Content.ReadFromJsonAsync<ProductResponseDto>();
+
+            return product;
         }
     }
 }

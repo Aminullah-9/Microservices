@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Order.Data;
 using Order.Model;
+using Order.Repository.Interfaces;
 
 namespace Order.Repository
 {
@@ -12,7 +13,7 @@ namespace Order.Repository
             _context = context;
         }
 
-        public Task<List<OrderModel>> GetOrder()
+        public Task<List<OrderModel>> GetOrders()
         {
            return _context.Orders.ToListAsync();
 

@@ -1,17 +1,14 @@
 ﻿using Order.DTO;
 
-namespace Order.Services.Interfaces
+public interface IOrderService
 {
-    public interface IOrderService
-    {
-        Task<List<OrderResponseDTO>> GetOrders();
+    Task<ApiResponse<List<OrderResponseDTO>>> GetOrders();
 
-        Task<OrderResponseDTO?> GetOrderById(int id);
+    Task<ApiResponse<OrderResponseDTO>> GetOrderById(int id);
 
-        Task<OrderResponseDTO> CreateOrder(OrderCreateDTO order);
+    Task<ApiResponse<OrderResponseDTO>> CreateOrder(OrderCreateDTO order);
 
-        Task<OrderResponseDTO?> UpdateOrder(OrderUpdateDTO order);
+    Task<ApiResponse<OrderResponseDTO>> UpdateOrder(OrderUpdateDTO order);
 
-        Task<bool> DeleteOrder(int id);
-    }
+    Task<ApiResponse<bool>> DeleteOrder(int id);
 }
