@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Order.DTO;
-using Order.Services.Interfaces;
 
 namespace Order.Controllers
 {
@@ -19,44 +17,66 @@ namespace Order.Controllers
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
-            var orders = await _orderService.GetOrders();
-            return Ok(orders);
-        }
-        [HttpPut]
-        public async Task<IActionResult> UpdateOrder(OrderUpdateDTO order)
-        {
-            var updatedOrder = await _orderService.UpdateOrder(order);
-            if (updatedOrder == null)
+            var response = await _orderService.GetOrders();
+
+            if (!response.Success)
             {
-                return NotFound();
+                return BadRequest(response);
             }
-            return Ok(updatedOrder);
+
+            return Ok(response);
         }
-        [HttpPost]
-        public async Task<IActionResult> CreateOrder(OrderCreateDTO order)
-        {
-            var createdOrder = await _orderService.CreateOrder(order);
-            return CreatedAtAction(nameof(GetOrders), new { id = createdOrder.OrderId }, createdOrder);
-        }
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteOrder(int id)
-        {
-            var result = await _orderService.DeleteOrder(id);
-            if (!result)
-            {
-                return NotFound();
-            }
-            return NoContent();
-        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
         {
-            var order = await _orderService.GetOrderById(id);
-            if (order == null)
+            var response = await _orderService.GetOrderById(id);
+
+            if (!response.Success)
             {
-                return NotFound();
+                return NotFound(response);
             }
-            return Ok(order);
+
+            return Ok(response);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateOrder(OrderCreateDTO order)
+        {
+            var response = await _orderService.CreateOrder(order);
+
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+
+            return StatusCode(201, response);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateOrder(OrderUpdateDTO order)
+        {
+            var response = await _orderService.UpdateOrder(order);
+
+            if (!response.Success)
+            {
+                return NotFound(response);
+            }
+
+            return Ok(response);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteOrder(int id)
+        {
+            var response = await _orderService.DeleteOrder(id);
+
+            if (!response.Success)
+            {
+                return NotFound(response);
+            }
+
+            return Ok(response);
         }
     }
 }

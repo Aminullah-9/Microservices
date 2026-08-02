@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="ApiGateway/ApiGateway.csproj" Id="505dfc12-89db-446a-9474-c03dd5722943" />
   <Project Path="Order/Order.csproj" Id="f9da1686-a25a-4e23-820e-ae555259c492" />
   <Project Path="ProductService/ProductService.csproj" />
 </Solution>

@@ -25,11 +25,17 @@ namespace ProductService.Services
                 Price=pro.ProductPrice,
                 ProductQuantity = pro.ProductQuantity
             }).ToList();
-        } 
+        }
 
-        public async Task<ProductResponseDTO> GetProductById(int id)
+        public async Task<ProductResponseDTO?> GetProductById(int id)
         {
             var product = await _repository.GetProductById(id);
+
+            if (product == null)
+            {
+                return null;
+            }
+
             return new ProductResponseDTO
             {
                 ProductId = product.ProductId,
@@ -38,8 +44,7 @@ namespace ProductService.Services
                 Price = product.ProductPrice,
                 ProductQuantity = product.ProductQuantity
             };
-        } 
-
+        }
         public async Task<ProductResponseDTO> CreateProduct(ProductCreateDTO product)
         {
             var Product = new Product

@@ -3,7 +3,6 @@ using Order.Data;
 using Order.Repository;
 using Order.Repository.Interfaces;
 using Order.Services;
-using Order.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +15,12 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register HttpClient
-builder.Services.AddHttpClient();
+var productServiceUrl = builder.Configuration["ServiceUrls:ProductService"];
 
+builder.Services.AddHttpClient("ProductService", client =>
+{
+    client.BaseAddress = new Uri(productServiceUrl!);
+});
 // Register Repository
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 

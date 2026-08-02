@@ -2,7 +2,6 @@
 using Order.Model;
 using Order.Repository;
 using Order.Repository.Interfaces;
-using Order.Services.Interfaces;
 using System.Reflection.Metadata.Ecma335;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -13,9 +12,9 @@ namespace Order.Services
         private readonly IOrderRepository _orderRepository;
         private readonly HttpClient _httpClient;
 
-        public OrderService(HttpClient httpClient, IOrderRepository orderRepository)
+        public OrderService(IHttpClientFactory httpClientFactory, IOrderRepository orderRepository)
         {
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("ProductService");
             _orderRepository = orderRepository;
         }
 
@@ -228,7 +227,7 @@ namespace Order.Services
         }
         private async Task<ProductResponseDto?> GetProductFromProductService(int productId)
         {
-            var response = await _httpClient.GetAsync($"https://localhost:7257/api/Product/{productId}");
+            var response = await _httpClient.GetAsync($"/api/Product/{productId}");
 
             if (!response.IsSuccessStatusCode)
             {
