@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Order.Data;
+using Order.Middleware;
 using Order.Repository;
 using Order.Repository.Interfaces;
 using Order.Services;
@@ -37,6 +38,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+//adding middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.Middleware;
 using ProductService.Repository;
 using ProductService.Repository.Interfaces;
 using ProductService.Services;
@@ -31,6 +32,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+//adding Middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

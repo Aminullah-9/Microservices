@@ -37,6 +37,7 @@ namespace Order.Services
             {
                 Success = true,
                 Message = "Orders fetched successfully.",
+                StatusCode = StatusCodes.Status200OK,
                 Data = data
             };
         }
@@ -51,10 +52,10 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Order not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
                     Data = null
                 };
             }
-
             var data = new OrderResponseDTO
             {
                 OrderId = order.OrderId,
@@ -69,6 +70,7 @@ namespace Order.Services
             {
                 Success = true,
                 Message = "Order fetched successfully.",
+                StatusCode = StatusCodes.Status200OK,
                 Data = data
             };
         }
@@ -81,6 +83,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Invalid Product Id.",
+                    StatusCode = StatusCodes.Status400BadRequest,
                     Data = null
                 };
             }
@@ -91,6 +94,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Quantity must be greater than zero.",
+                    StatusCode = StatusCodes.Status400BadRequest,
                     Data = null
                 };
             }
@@ -104,6 +108,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Product does not exist.",
+                    StatusCode = StatusCodes.Status404NotFound,
                     Data = null
                 };
             }
@@ -115,6 +120,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Requested quantity is greater than available stock.",
+                    StatusCode = StatusCodes.Status400BadRequest,
                     Data = null
                 };
             }
@@ -148,6 +154,7 @@ namespace Order.Services
             {
                 Success = true,
                 Message = "Order created successfully.",
+                StatusCode = StatusCodes.Status200OK,
                 Data = data
             };
         }
@@ -161,6 +168,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Order not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
                     Data = null
                 };
             }
@@ -195,6 +203,7 @@ namespace Order.Services
             {
                 Success = true,
                 Message = "Order updated successfully.",
+                StatusCode = StatusCodes.Status200OK,
                 Data = data
             };
         }
@@ -208,6 +217,7 @@ namespace Order.Services
                 {
                     Success = false,
                     Message = "Order not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
                     Data = false
                 };
             }
