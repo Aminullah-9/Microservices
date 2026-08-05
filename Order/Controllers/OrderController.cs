@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Order.DTO;
 
 namespace Order.Controllers
@@ -13,7 +14,7 @@ namespace Order.Controllers
         {
             _orderService = orderService;
         }
-
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
@@ -26,7 +27,7 @@ namespace Order.Controllers
 
             return Ok(response);
         }
-
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
         {
@@ -39,7 +40,7 @@ namespace Order.Controllers
 
             return Ok(response);
         }
-
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateOrder(OrderCreateDTO order)
         {
@@ -52,7 +53,7 @@ namespace Order.Controllers
 
             return StatusCode(201, response);
         }
-
+        [Authorize]
         [HttpPut]
         public async Task<IActionResult> UpdateOrder(OrderUpdateDTO order)
         {
@@ -65,7 +66,7 @@ namespace Order.Controllers
 
             return Ok(response);
         }
-
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {

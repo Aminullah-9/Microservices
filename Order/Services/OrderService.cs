@@ -77,29 +77,7 @@ namespace Order.Services
 
         public async Task<ApiResponse<OrderResponseDTO>> CreateOrder(OrderCreateDTO orderCreateDTO)
         {
-            if (orderCreateDTO.ProductId <= 0)
-            {
-                return new ApiResponse<OrderResponseDTO>
-                {
-                    Success = false,
-                    Message = "Invalid Product Id.",
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Data = null
-                };
-            }
-
-            if (orderCreateDTO.Quantity <= 0)
-            {
-                return new ApiResponse<OrderResponseDTO>
-                {
-                    Success = false,
-                    Message = "Quantity must be greater than zero.",
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Data = null
-                };
-            }
-
-
+            
             var product = await GetProductFromProductService(orderCreateDTO.ProductId);
 
             if (product == null)
@@ -232,6 +210,7 @@ namespace Order.Services
                 Message = result
                     ? "Order deleted successfully."
                     : "Failed to delete order.",
+                StatusCode=result?StatusCodes.Status410Gone:StatusCodes.Status400BadRequest,
                 Data = result
             };
         }
