@@ -20,27 +20,49 @@ public partial class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters =
-                    new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
+     .AddJwtBearer(options =>
+     {
+           
+         options.TokenValidationParameters =
+             new TokenValidationParameters
+             {
+                 ValidateIssuer = true,
+                 ValidateAudience = true,
+                 ValidateLifetime = true,
+                 ValidateIssuerSigningKey = true,
 
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                 ValidAudience = builder.Configuration["Jwt:Audience"],
 
-                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                 IssuerSigningKey =
+                     new SymmetricSecurityKey(
+                         Encoding.UTF8.GetBytes(
+                             builder.Configuration["Jwt:Key"]!
+                         ))
+             };
 
-                        IssuerSigningKey =
-                            new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(
-                                    builder.Configuration["Jwt:Key"]!
-                                ))
-                    };
-            });
+
+         options.Events = new JwtBearerEvents
+         {
+             OnMessageReceived = context =>
+             {
+
+                 return Task.CompletedTask;
+             },
+
+             OnTokenValidated = context =>
+             {
+
+                 return Task.CompletedTask;
+             },
+
+             OnAuthenticationFailed = context =>
+             {
+
+                 return Task.CompletedTask;
+             }
+         };
+     });
 
         // Add services to the container
         builder.Services.AddControllers()

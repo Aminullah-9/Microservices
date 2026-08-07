@@ -13,10 +13,11 @@ namespace Identity_Service.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TokenService _tokenService;
-
-        public AuthController(UserManager<ApplicationUser> userManager, TokenService tokenService)
+        private readonly RoleManager<IdentityRole> _roleManager;
+        public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, TokenService tokenService)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _tokenService = tokenService;
         }
 

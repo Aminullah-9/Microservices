@@ -18,6 +18,12 @@ namespace Order.Controllers
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
+            var token = Request.Headers["Authorization"].ToString();
+
+            Console.WriteLine("==========================");
+            Console.WriteLine(token);
+            Console.WriteLine("==========================");
+
             var response = await _orderService.GetOrders();
 
             if (!response.Success)
@@ -27,6 +33,7 @@ namespace Order.Controllers
 
             return Ok(response);
         }
+
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
@@ -40,6 +47,7 @@ namespace Order.Controllers
 
             return Ok(response);
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateOrder(OrderCreateDTO order)
