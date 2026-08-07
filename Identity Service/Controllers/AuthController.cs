@@ -43,11 +43,9 @@ namespace Identity_Service.Controllers
                 return BadRequest(result.Errors);
             }
 
+            await _userManager.AddToRoleAsync(user, "Customer");
 
-            return Ok(new
-            {
-                Message = "User registered successfully"
-            });
+            return Ok("User Registered Successfully");
         }
 
         [HttpPost("login")]
@@ -66,7 +64,7 @@ namespace Identity_Service.Controllers
                 return BadRequest("Invalid Credinatiials");
             }
 
-            var tokken = _tokenService.GenerateTokken(user);
+            var tokken = await _tokenService.GenerateTokken(user);
 
             return Ok(new
             {

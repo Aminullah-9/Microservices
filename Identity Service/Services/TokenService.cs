@@ -1,4 +1,5 @@
 ﻿using Identity_Service.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -8,34 +9,29 @@ namespace Identity_Service.Services
 {
     public class TokenService
     {
-        private readonly IConfiguration _configuration;
+        private readonly IConfiguration _configuration; 
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TokenService(IConfiguration configuration)
+        public TokenService(IConfiguration configuration, UserManager<ApplicationUser> userManager) 
         {
             _configuration = configuration;
+            _userManager = userManager; 
         }
 
-
-        public string GenerateTokken(ApplicationUser user)
+        public async Task<string> GenerateTokken(ApplicationUser user)
         {
-            var claims = new[]
+            var roles = await _userManager.GetRolesAsync(user);
+            var claims = new List<Claim>
             {
-                new Claim(
-                    JwtRegisteredClaimNames.Sub,
-                    user.Id
-                ),
-
-                new Claim(
-                    JwtRegisteredClaimNames.Email,
-                    user.Email!
-                ),
-
-                new Claim(
-                    JwtRegisteredClaimNames.UniqueName,
-                    user.UserName!
-                )
+               new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+               new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+               new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName!)
             };
 
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(

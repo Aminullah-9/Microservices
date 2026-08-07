@@ -14,15 +14,10 @@ namespace Order.Controllers
         {
             _orderService = orderService;
         }
-        [Authorize]
+        [Authorize(Roles = "Customer")]
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
-            var token = Request.Headers["Authorization"].ToString();
-
-            Console.WriteLine("==========================");
-            Console.WriteLine(token);
-            Console.WriteLine("==========================");
 
             var response = await _orderService.GetOrders();
 
@@ -34,7 +29,7 @@ namespace Order.Controllers
             return Ok(response);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
         {

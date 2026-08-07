@@ -6,7 +6,7 @@ namespace Identity_Service.Services.Seed
     {
         public static async Task SeedRoles(RoleManager<IdentityRole> roleManager)
         {
-            string[] roleNames = { "Admin", "User" };
+            string[] roleNames = { "Admin", "Customer" };
 
             foreach(var roleName in roleNames)
             {
