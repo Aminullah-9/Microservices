@@ -16,5 +16,6 @@ namespace Order.Model
         public bool IsPaid { get; set; }
 
         public DateTime OrderDate { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

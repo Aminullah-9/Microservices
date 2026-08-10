@@ -68,6 +68,8 @@ public partial class Program
         builder.Services.AddControllers()
             .AddFluentValidation();
 
+        builder.Services.AddHttpContextAccessor();
+
         builder.Services.AddValidatorsFromAssemblyContaining<OrderCreateValidator>();
 
         builder.Services.Configure<ApiBehaviorOptions>(options =>

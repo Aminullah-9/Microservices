@@ -1,8 +1,10 @@
-﻿using Identity_Service.Models;
+﻿using Identity_Service.Data;
+using Identity_Service.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Identity_Service.Services
@@ -11,11 +13,13 @@ namespace Identity_Service.Services
     {
         private readonly IConfiguration _configuration; 
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbContext _context;
 
-        public TokenService(IConfiguration configuration, UserManager<ApplicationUser> userManager) 
+        public TokenService(IConfiguration configuration, UserManager<ApplicationUser> userManager, ApplicationDbContext context) 
         {
             _configuration = configuration;
-            _userManager = userManager; 
+            _userManager = userManager;
+            _context = context;
         }
 
         public async Task<string> GenerateTokken(ApplicationUser user)
@@ -65,6 +69,24 @@ namespace Identity_Service.Services
 
             return new JwtSecurityTokenHandler()
                 .WriteToken(token);
+        }
+
+        public async Task<RefreshToken> GenerateRefreshToken(ApplicationUser user)
+        {
+            var randombytes = RandomNumberGenerator.GetBytes(64);
+
+            var RefereToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(randombytes),
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                IsRevoked = false,
+                UserId = user.Id
+            };
+
+            _context.RefreshTokens.Add(RefereToken);
+            await _context.SaveChangesAsync();
+            return RefereToken;
         }
     }
 }

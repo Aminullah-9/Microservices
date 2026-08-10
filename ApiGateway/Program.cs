@@ -1,48 +1,47 @@
-using Yarp.ReverseProxy;
-using Yarp.ReverseProxy.Transforms;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add YARP Reverse Proxy
 builder.Services
-    .AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
-    .AddTransforms(builderContext =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        builderContext.AddRequestTransform(transformContext =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            transformContext.ProxyRequest.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer",
-                    transformContext.HttpContext.Request.Headers["Authorization"]
-                        .ToString()
-                        .Replace("Bearer ", ""));
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
 
-            return ValueTask.CompletedTask;
-        });
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    builder.Configuration["Jwt:Key"]!
+                )
+            )
+        };
     });
 
-// Swagger (Optional)
+builder.Services.AddAuthorization();
+
+builder.Services
+    .AddReverseProxy()
+    .LoadFromConfig(
+        builder.Configuration.GetSection("ReverseProxy")
+    );
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 var app = builder.Build();
 
-
-// Swagger (Optional)
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-
-// Do NOT add authentication here
-// Gateway only forwards requests
-
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapReverseProxy();
-
 
 app.Run();

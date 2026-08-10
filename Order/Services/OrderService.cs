@@ -4,6 +4,7 @@ using Order.Repository;
 using Order.Repository.Interfaces;
 using System.Reflection.Metadata.Ecma335;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Security.Claims;
 
 namespace Order.Services
 {
@@ -11,17 +12,39 @@ namespace Order.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly HttpClient _httpClient;
-
-        public OrderService(IHttpClientFactory httpClientFactory, IOrderRepository orderRepository)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public OrderService(IHttpClientFactory httpClientFactory, IOrderRepository orderRepository, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClientFactory.CreateClient("ProductService");
             _orderRepository = orderRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
 
         public async Task<ApiResponse<List<OrderResponseDTO>>> GetOrders()
         {
+            var user= _httpContextAccessor.HttpContext.User;
+
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new ApiResponse<List<OrderResponseDTO>>
+                {
+                    Success = false,
+                    Message = "User Identity not Found.",
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Data = null
+                };
+            }
+            
+            var IsAdmin= user.IsInRole("Admin");
             var orders = await _orderRepository.GetOrders();
+
+            if(!IsAdmin)
+            {
+                orders = orders.Where(o => o.UserId == userId).ToList();
+            }
 
             var data = orders.Select(x => new OrderResponseDTO
             {
@@ -30,7 +53,8 @@ namespace Order.Services
                 OrderDate = x.OrderDate,
                 IsPaid = x.IsPaid,
                 prices = x.prices,
-                Quantity = x.Quantity
+                Quantity = x.Quantity,
+                UserId = x.UserId
             }).ToList();
 
             return new ApiResponse<List<OrderResponseDTO>>
@@ -63,7 +87,8 @@ namespace Order.Services
                 OrderDate = order.OrderDate,
                 IsPaid = order.IsPaid,
                 prices = order.prices,
-                Quantity = order.Quantity
+                Quantity = order.Quantity,
+                UserId = order.UserId
             };
 
             return new ApiResponse<OrderResponseDTO>
@@ -103,6 +128,18 @@ namespace Order.Services
                 };
             }
 
+            var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "User identity not found.",
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Data = null
+                };
+            }
 
             var order = new OrderModel
             {
@@ -110,7 +147,8 @@ namespace Order.Services
                 OrderDate = orderCreateDTO.OrderDate,
                 IsPaid = orderCreateDTO.IsPaid,
                 prices = orderCreateDTO.prices,
-                Quantity = orderCreateDTO.Quantity
+                Quantity = orderCreateDTO.Quantity,
+                UserId = userId ?? string.Empty
             };
 
 
@@ -124,7 +162,8 @@ namespace Order.Services
                 OrderDate = order.OrderDate,
                 IsPaid = order.IsPaid,
                 prices = order.prices,
-                Quantity = order.Quantity
+                Quantity = order.Quantity,
+                UserId= order.UserId
             };
 
 
@@ -173,7 +212,8 @@ namespace Order.Services
                 OrderDate = order.OrderDate,
                 IsPaid = order.IsPaid,
                 prices = order.prices,
-                Quantity = order.Quantity
+                Quantity = order.Quantity,
+                UserId = existingOrder.UserId
             };
 
 

@@ -14,7 +14,7 @@ namespace Order.Controllers
         {
             _orderService = orderService;
         }
-        [Authorize(Roles = "Customer")]
+        [Authorize(Roles = "Admin,Customer")]
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
