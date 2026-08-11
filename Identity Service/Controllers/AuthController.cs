@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Identity_Service.Controllers
 {
@@ -68,12 +69,19 @@ namespace Identity_Service.Controllers
                 return BadRequest("Invalid Credinatiials");
             }
 
-            var accesstokken = await _tokenService.GenerateTokken(user);
-            var RefereshToken = await _tokenService.GenerateRefreshToken(user);
+            var accessToken =
+        await _tokenService.GenerateTokken(user);
+
+            var refreshToken =
+                 _tokenService.GenerateRefreshToken(user);
+
+            // IMPORTANT
+            await _context.SaveChangesAsync();
+
             return Ok(new
             {
-                Token = accesstokken,
-                RefreshToken = RefereshToken.Token
+                AccessToken = accessToken,
+                RefreshToken = refreshToken.Token
             });
         }
 
@@ -94,18 +102,80 @@ namespace Identity_Service.Controllers
             {
                 return BadRequest("The tokken Is Expired");
             }
+            var user = await _userManager.FindByIdAsync( refereshToken.UserId);
 
-            var user = await _userManager.FindByIdAsync(refereshToken.UserId);
             if (user == null)
             {
-                return BadRequest("User associated with token does not exist.");
+                return BadRequest(
+                    "User associated with token does not exist.");
             }
+            refereshToken.IsRevoked = true;
+
+            // Generate new tokens
             var newAccessToken = await _tokenService.GenerateTokken(user);
+
+            var newRefreshToken =
+                 _tokenService.GenerateRefreshToken(user);
+
+            await _context.SaveChangesAsync();
+
             return Ok(new
             {
-                Token = newAccessToken,
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken.Token
             });
 
+        }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout(LogoutDTO logoutDTO)
+        {
+            var refreshToken = await _context.RefreshTokens
+                .FirstOrDefaultAsync(x =>
+                    x.Token == logoutDTO.RefreshToken);
+
+            if (refreshToken == null)
+            {
+                return BadRequest("Invalid Refresh Token");
+            }
+
+            if (refreshToken.IsRevoked)
+            {
+                return BadRequest("Refresh Token is already revoked");
+            }
+
+            refreshToken.IsRevoked = true;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Logged out successfully");
+        }
+        [HttpPost("logout-all")]
+        public async Task<IActionResult> LogoutAll()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User identity not found.");
+            }
+
+            var refreshTokens = await _context.RefreshTokens
+                .Where(x => x.UserId == userId && !x.IsRevoked)
+                .ToListAsync();
+
+            if (!refreshTokens.Any())
+            {
+                return Ok("No active sessions found.");
+            }
+
+            foreach (var token in refreshTokens)
+            {
+                token.IsRevoked = true;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok("All sessions have been logged out.");
         }
     }
 }

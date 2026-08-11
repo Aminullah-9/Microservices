@@ -71,7 +71,7 @@ namespace Identity_Service.Services
                 .WriteToken(token);
         }
 
-        public async Task<RefreshToken> GenerateRefreshToken(ApplicationUser user)
+        public RefreshToken GenerateRefreshToken(ApplicationUser user)
         {
             var randombytes = RandomNumberGenerator.GetBytes(64);
 
@@ -85,7 +85,6 @@ namespace Identity_Service.Services
             };
 
             _context.RefreshTokens.Add(RefereToken);
-            await _context.SaveChangesAsync();
             return RefereToken;
         }
     }

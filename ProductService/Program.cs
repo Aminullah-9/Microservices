@@ -1,13 +1,18 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using ProductService.Data;
+using ProductService.DTO;
 using ProductService.Middleware;
 using ProductService.Repository;
 using ProductService.Repository.Interfaces;
 using ProductService.Services;
 using ProductService.Services.Interfaces;
+using ProductService.Validator;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,8 +62,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 });
 
 // Add Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+           .AddFluentValidation();
 
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddValidatorsFromAssemblyContaining<ProductValidor>();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value!.Errors.Count > 0)
+            .ToDictionary(
+                x => x.Key,
+                x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+
+        var response = new ApiResponse<object>
+        {
+            Success = false,
+            Message = "Validation failed.",
+            StatusCode = StatusCodes.Status400BadRequest,
+            Data = errors
+        };
+
+        return new BadRequestObjectResult(response);
+    };
+});
 // Register DbContext
 builder.Services.AddDbContext<EcommerceApiDbContext>(options =>
     options.UseSqlServer(

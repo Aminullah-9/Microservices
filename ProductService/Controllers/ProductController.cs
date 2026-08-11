@@ -1,11 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ProductModel.Model;
 using ProductService.DTO;
 using ProductService.Services.Interfaces;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ProductService.Controllers
 {
@@ -21,43 +17,58 @@ namespace ProductService.Controllers
 
         [Authorize]
         [HttpGet]
-        public async Task<ActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts()
         {
-            var products = await _productService.GetProducts();
-            if (products == null) 
-            { 
-                return NotFound("No Products Available");
-            }
-            return Ok(products);
-        }
-        [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct(ProductCreateDTO product)
-        {
-            await _productService.CreateProduct(product);
+            var response = await _productService.GetProducts();
 
-            return Ok(product);
+            if (!response.Success)
+            {
+                return NotFound(response);
+            }
+
+            return Ok(response);
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct(ProductCreateDTO product)
+        {
+            var response = await _productService.CreateProduct(product);
+
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+
+            return StatusCode(201, response);
         }
 
         [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProductById(int id)
         {
-            var item = await _productService.GetProductById(id);
-            if (item == null)
+            var response = await _productService.DeleteProduct(id);
+
+            if (!response.Success)
             {
-                return BadRequest();
+                return NotFound(response);
             }
-            await _productService.DeleteProduct(id);
-            return Ok("Item Deleted Succesfully");
+
+            return Ok(response);
         }
 
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _productService.GetProductById(id);
-            if (product == null) return NotFound();
-            return Ok(product);
+            var response = await _productService.GetProductById(id);
+
+            if (!response.Success)
+            {
+                return NotFound(response);
+            }
+
+            return Ok(response);
         }
 
         [Authorize]
@@ -65,9 +76,15 @@ namespace ProductService.Controllers
         public async Task<IActionResult> UpdateProduct(int id, ProductUpdateDto product)
         {
             if (id != product.ProductId) return BadRequest("ID mismatch");
-            var updated = await _productService.UpdateProduct(product);
-            if (updated == null) return NotFound();
-            return Ok(updated);
+
+            var response = await _productService.UpdateProduct(product);
+
+            if (!response.Success)
+            {
+                return NotFound(response);
+            }
+
+            return Ok(response);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using ProductModel.Model;
+﻿using Microsoft.AspNetCore.Http;
+using ProductModel.Model;
 using ProductService.DTO;
 using ProductService.Repository;
 using ProductService.Repository.Interfaces;
@@ -6,7 +7,7 @@ using ProductService.Services.Interfaces;
 
 namespace ProductService.Services
 {
-    public class ProductService: IProductService
+    public class ProductService : IProductService
     {
         private readonly IProductRepository _repository;
         public ProductService(IProductRepository repository)
@@ -14,29 +15,55 @@ namespace ProductService.Services
             _repository = repository;
         }
 
-        public async Task<List<ProductResponseDTO>> GetProducts()
+        public async Task<ApiResponse<List<ProductResponseDTO>>> GetProducts()
         {
-            var pro= await _repository.GetProducts();
-            return pro.Select(pro=>new ProductResponseDTO
+            var products = await _repository.GetProducts();
+
+            var data = products.Select(pro => new ProductResponseDTO
             {
                 ProductId = pro.ProductId,
                 ProductName = pro.ProductName,
                 ProductDescription = pro.ProductDescription,
-                Price=pro.ProductPrice,
+                Price = pro.ProductPrice,
                 ProductQuantity = pro.ProductQuantity
             }).ToList();
+
+            if (data.Count == 0)
+            {
+                return new ApiResponse<List<ProductResponseDTO>>
+                {
+                    Success = false,
+                    Message = "No Products Available.",
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Data = data
+                };
+            }
+
+            return new ApiResponse<List<ProductResponseDTO>>
+            {
+                Success = true,
+                Message = "Products fetched successfully.",
+                StatusCode = StatusCodes.Status200OK,
+                Data = data
+            };
         }
 
-        public async Task<ProductResponseDTO?> GetProductById(int id)
+        public async Task<ApiResponse<ProductResponseDTO>> GetProductById(int id)
         {
             var product = await _repository.GetProductById(id);
 
             if (product == null)
             {
-                return null;
+                return new ApiResponse<ProductResponseDTO>
+                {
+                    Success = false,
+                    Message = "Product not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Data = null
+                };
             }
 
-            return new ProductResponseDTO
+            var data = new ProductResponseDTO
             {
                 ProductId = product.ProductId,
                 ProductName = product.ProductName,
@@ -44,30 +71,47 @@ namespace ProductService.Services
                 Price = product.ProductPrice,
                 ProductQuantity = product.ProductQuantity
             };
+
+            return new ApiResponse<ProductResponseDTO>
+            {
+                Success = true,
+                Message = "Product fetched successfully.",
+                StatusCode = StatusCodes.Status200OK,
+                Data = data
+            };
         }
-        public async Task<ProductResponseDTO> CreateProduct(ProductCreateDTO product)
+
+        public async Task<ApiResponse<ProductResponseDTO>> CreateProduct(ProductCreateDTO product)
         {
-            var Product = new Product
+            var newProduct = new Product
             {
                 ProductName = product.ProductName,
                 ProductDescription = product.ProductDescription,
                 ProductPrice = product.Price,
                 ProductQuantity = product.ProductQuantity
             };
-                
-            await _repository.CreateProduct(Product);
-            return new ProductResponseDTO
+
+            await _repository.CreateProduct(newProduct);
+
+            var data = new ProductResponseDTO
             {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductDescription = product.ProductDescription,
-                Price = product.Price,
-                ProductQuantity = product.ProductQuantity
+                ProductId = newProduct.ProductId,
+                ProductName = newProduct.ProductName,
+                ProductDescription = newProduct.ProductDescription,
+                Price = newProduct.ProductPrice,
+                ProductQuantity = newProduct.ProductQuantity
+            };
+
+            return new ApiResponse<ProductResponseDTO>
+            {
+                Success = true,
+                Message = "Product created successfully.",
+                StatusCode = StatusCodes.Status201Created,
+                Data = data
             };
         }
 
-        public async Task<ProductResponseDTO?> UpdateProduct(
-         ProductUpdateDto productUpdateDto)
+        public async Task<ApiResponse<ProductResponseDTO>> UpdateProduct(ProductUpdateDto productUpdateDto)
         {
             var product = new Product
             {
@@ -82,10 +126,16 @@ namespace ProductService.Services
 
             if (updatedProduct == null)
             {
-                return null;
+                return new ApiResponse<ProductResponseDTO>
+                {
+                    Success = false,
+                    Message = "Product not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Data = null
+                };
             }
 
-            return new ProductResponseDTO
+            var data = new ProductResponseDTO
             {
                 ProductId = updatedProduct.ProductId,
                 ProductName = updatedProduct.ProductName,
@@ -93,11 +143,42 @@ namespace ProductService.Services
                 Price = updatedProduct.ProductPrice,
                 ProductQuantity = updatedProduct.ProductQuantity
             };
+
+            return new ApiResponse<ProductResponseDTO>
+            {
+                Success = true,
+                Message = "Product updated successfully.",
+                StatusCode = StatusCodes.Status200OK,
+                Data = data
+            };
         }
 
-        public async Task<bool> DeleteProduct(int id)
+        public async Task<ApiResponse<bool>> DeleteProduct(int id)
         {
-            return await _repository.DeleteProduct(id);
+            var product = await _repository.GetProductById(id);
+
+            if (product == null)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Product not found.",
+                    StatusCode = StatusCodes.Status404NotFound,
+                    Data = false
+                };
+            }
+
+            var result = await _repository.DeleteProduct(id);
+
+            return new ApiResponse<bool>
+            {
+                Success = result,
+                Message = result
+                    ? "Product deleted successfully."
+                    : "Failed to delete product.",
+                StatusCode = result ? StatusCodes.Status200OK : StatusCodes.Status400BadRequest,
+                Data = result
+            };
         }
     }
 }

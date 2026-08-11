@@ -5,14 +5,14 @@ namespace ProductService.Services.Interfaces
 {
     public interface IProductService
     {
-        
-        
-            Task<List<ProductResponseDTO>> GetProducts();
-            Task<ProductResponseDTO?> GetProductById(int id);
-            Task<ProductResponseDTO> CreateProduct(ProductCreateDTO product);
-            Task<ProductResponseDTO?> UpdateProduct(ProductUpdateDto product);
-            Task<bool> DeleteProduct(int id);
-        
+
+
+        Task<ApiResponse<List<ProductResponseDTO>>> GetProducts();
+        Task<ApiResponse<ProductResponseDTO>> GetProductById(int id);
+        Task<ApiResponse<ProductResponseDTO>> CreateProduct(ProductCreateDTO product);
+        Task<ApiResponse<ProductResponseDTO>> UpdateProduct(ProductUpdateDto product);
+        Task<ApiResponse<bool>> DeleteProduct(int id);
+
     }
 
 
