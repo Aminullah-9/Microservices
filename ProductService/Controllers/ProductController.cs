@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductModel.Model;
@@ -18,6 +19,7 @@ namespace ProductService.Controllers
             _productService = productService;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult> GetProducts()
         {
@@ -36,6 +38,7 @@ namespace ProductService.Controllers
             return Ok(product);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProductById(int id)
         {
@@ -47,6 +50,8 @@ namespace ProductService.Controllers
             await _productService.DeleteProduct(id);
             return Ok("Item Deleted Succesfully");
         }
+
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
@@ -55,6 +60,7 @@ namespace ProductService.Controllers
             return Ok(product);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, ProductUpdateDto product)
         {
