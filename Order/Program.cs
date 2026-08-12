@@ -105,6 +105,13 @@ public partial class Program
         {
             client.BaseAddress = new Uri(productServiceUrl!);
         });
+
+        builder.Services.AddHttpContextAccessor();
+
+        builder.Services.AddHttpClient("ProductService", client =>
+        {
+            client.BaseAddress = new Uri(productServiceUrl!);
+        });
         // Register Repository
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 

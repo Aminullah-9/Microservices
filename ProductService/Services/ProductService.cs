@@ -180,5 +180,40 @@ namespace ProductService.Services
                 Data = result
             };
         }
+
+        public async Task<ApiResponse<bool>> ReduceStock(int productId, int quantity)
+        {
+            if (quantity <= 0)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Quantity must be greater than zero.",
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Data = false
+                };
+            }
+
+            var result= await _repository.ReduceStock(productId, quantity);
+
+            if (!result)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Product does not exist or insufficient stock.",
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Data = false
+                };
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = true,
+                Message = "Product stock updated successfully.",
+                StatusCode = StatusCodes.Status200OK,
+                Data = true
+            };
+        }
     }
 }

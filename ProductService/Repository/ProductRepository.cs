@@ -56,5 +56,14 @@ namespace ProductService.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+        public async Task<bool> ReduceStock(int productId, int quantity)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if(product == null || quantity<=0 || product.ProductQuantity < quantity)
+                return false;
+            product.ProductQuantity -= quantity;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

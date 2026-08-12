@@ -9,6 +9,7 @@ namespace ProductService.Repository.Interfaces
         Task<Product> CreateProduct(Product product);
         Task<Product?> UpdateProduct(Product product);
         Task<bool> DeleteProduct(int id);
+        Task<bool> ReduceStock(int productId, int quantity);
     }
 }
 

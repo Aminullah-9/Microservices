@@ -1,10 +1,11 @@
-﻿using Order.DTO;
+﻿using Azure.Core;
+using Order.DTO;
 using Order.Model;
 using Order.Repository;
 using Order.Repository.Interfaces;
 using System.Reflection.Metadata.Ecma335;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Claims;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Order.Services
 {
@@ -104,7 +105,9 @@ namespace Order.Services
         {
             
             var product = await GetProductFromProductService(orderCreateDTO.ProductId);
-
+            Console.WriteLine($"Product ID: {product?.ProductId}");
+            Console.WriteLine($"Product Quantity: {product?.ProductQuantity}");
+            Console.WriteLine($"Requested Quantity: {orderCreateDTO.Quantity}");
             if (product == null)
             {
                 return new ApiResponse<OrderResponseDTO>
@@ -256,16 +259,33 @@ namespace Order.Services
         }
         private async Task<ProductResponseDto?> GetProductFromProductService(int productId)
         {
-            var response = await _httpClient.GetAsync($"/api/Product/{productId}");
+            var token = _httpContextAccessor.HttpContext?
+        .Request.Headers["Authorization"]
+        .FirstOrDefault();
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/Product/{productId}");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                request.Headers.TryAddWithoutValidation(
+                    "Authorization",
+                    token);
+            }
+
+            var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
                 return null;
             }
 
-            var product = await response.Content.ReadFromJsonAsync<ProductResponseDto>();
+            var result =
+                await response.Content.ReadFromJsonAsync<
+                    ApiResponse<ProductResponseDto>>();
 
-            return product;
+            return result?.Data;
         }
     }
 }

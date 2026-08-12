@@ -86,5 +86,16 @@ namespace ProductService.Controllers
 
             return Ok(response);
         }
+        [Authorize]
+        [HttpPut("{id}/reduce-stock")]
+        public async Task<IActionResult> ReduceProductStock(int id, ReduceStockDTO reduceStockDTO)
+        {
+            var response = await _productService.ReduceStock(id, reduceStockDTO.Quantity);
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+            return Ok(response);
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace ProductService.Services.Interfaces
         Task<ApiResponse<ProductResponseDTO>> CreateProduct(ProductCreateDTO product);
         Task<ApiResponse<ProductResponseDTO>> UpdateProduct(ProductUpdateDto product);
         Task<ApiResponse<bool>> DeleteProduct(int id);
-
+        Task<ApiResponse<bool>> ReduceStock(int productId, int quantity);
     }
 
 
