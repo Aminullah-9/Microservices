@@ -131,6 +131,8 @@ namespace Order.Services
                 };
             }
 
+           
+
             var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
@@ -149,7 +151,6 @@ namespace Order.Services
                 ProductId = orderCreateDTO.ProductId,
                 OrderDate = orderCreateDTO.OrderDate,
                 IsPaid = orderCreateDTO.IsPaid,
-                prices = orderCreateDTO.prices,
                 Quantity = orderCreateDTO.Quantity,
                 UserId = userId ?? string.Empty
             };
@@ -157,6 +158,18 @@ namespace Order.Services
 
             await _orderRepository.CreateOrder(order);
 
+            var StockReduced = await ReduceStoke(orderCreateDTO.ProductId, orderCreateDTO.Quantity);
+
+            if (!StockReduced)
+            {
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = false,
+                    Message = "Unable to update product stock.",
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Data = null
+                };
+            }
 
             var data = new OrderResponseDTO
             {
@@ -164,7 +177,7 @@ namespace Order.Services
                 ProductId = order.ProductId,
                 OrderDate = order.OrderDate,
                 IsPaid = order.IsPaid,
-                prices = order.prices,
+                prices = product.Price * orderCreateDTO.Quantity,
                 Quantity = order.Quantity,
                 UserId= order.UserId
             };
@@ -260,8 +273,8 @@ namespace Order.Services
         private async Task<ProductResponseDto?> GetProductFromProductService(int productId)
         {
             var token = _httpContextAccessor.HttpContext?
-        .Request.Headers["Authorization"]
-        .FirstOrDefault();
+           .Request.Headers["Authorization"]
+            .FirstOrDefault();
 
             using var request = new HttpRequestMessage(
                 HttpMethod.Get,
@@ -287,5 +300,39 @@ namespace Order.Services
 
             return result?.Data;
         }
+
+        private async Task<bool> ReduceStoke(int productId, int quantity)
+        {
+            var token = _httpContextAccessor.HttpContext?
+                .Request.Headers["Authorization"]
+                .FirstOrDefault();
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"/api/Product/{productId}/reduce-stock");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                request.Headers.TryAddWithoutValidation(
+                    "Authorization",
+                    token);
+            }
+
+            request.Content = JsonContent.Create(new
+            {
+                quantity = quantity
+            });
+
+            var response = await _httpClient.SendAsync(request);
+
+            Console.WriteLine($"Reduce Stock Status: {response.StatusCode}");
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine($"Reduce Stock Response: {responseBody}");
+
+            return response.IsSuccessStatusCode;
+        }
+
     }
 }

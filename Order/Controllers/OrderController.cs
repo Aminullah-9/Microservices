@@ -44,7 +44,7 @@ namespace Order.Controllers
         }
 
         [Authorize]
-        [HttpPost]
+        [HttpPost("CreateOrder")]
         public async Task<IActionResult> CreateOrder(OrderCreateDTO order)
         {
             var response = await _orderService.CreateOrder(order);
