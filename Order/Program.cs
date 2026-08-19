@@ -104,7 +104,20 @@ public partial class Program
         builder.Services.AddHttpClient("ProductService", client =>
         {
             client.BaseAddress = new Uri(productServiceUrl!);
-        }).AddStandardResilienceHandler();
+        }).AddStandardResilienceHandler(options =>
+        {
+            options.Retry.MaxRetryAttempts = 3;
+
+            options.CircuitBreaker.SamplingDuration =
+                TimeSpan.FromSeconds(10);
+
+            options.CircuitBreaker.FailureRatio = 0.5;
+
+            options.CircuitBreaker.MinimumThroughput = 5;
+
+            options.CircuitBreaker.BreakDuration =
+                TimeSpan.FromSeconds(30);
+        });
 
         builder.Services.AddHttpContextAccessor();
 
