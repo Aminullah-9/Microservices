@@ -103,93 +103,106 @@ namespace Order.Services
 
         public async Task<ApiResponse<OrderResponseDTO>> CreateOrder(OrderCreateDTO orderCreateDTO)
         {
-            
-            var product = await GetProductFromProductService(orderCreateDTO.ProductId);
-            Console.WriteLine($"Product ID: {product?.ProductId}");
-            Console.WriteLine($"Product Quantity: {product?.ProductQuantity}");
-            Console.WriteLine($"Requested Quantity: {orderCreateDTO.Quantity}");
-            if (product == null)
+            try
+            {
+                var product = await GetProductFromProductService(orderCreateDTO.ProductId);
+                Console.WriteLine($"Product ID: {product?.ProductId}");
+                Console.WriteLine($"Product Quantity: {product?.ProductQuantity}");
+                Console.WriteLine($"Requested Quantity: {orderCreateDTO.Quantity}");
+                if (product == null)
+                {
+                    return new ApiResponse<OrderResponseDTO>
+                    {
+                        Success = false,
+                        Message = "Product does not exist.",
+                        StatusCode = StatusCodes.Status404NotFound,
+                        Data = null
+                    };
+                }
+
+
+                if (orderCreateDTO.Quantity > product.ProductQuantity)
+                {
+                    return new ApiResponse<OrderResponseDTO>
+                    {
+                        Success = false,
+                        Message = "Requested quantity is greater than available stock.",
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        Data = null
+                    };
+                }
+
+
+
+                var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return new ApiResponse<OrderResponseDTO>
+                    {
+                        Success = false,
+                        Message = "User identity not found.",
+                        StatusCode = StatusCodes.Status401Unauthorized,
+                        Data = null
+                    };
+                }
+
+                var order = new OrderModel
+                {
+                    ProductId = orderCreateDTO.ProductId,
+                    OrderDate = orderCreateDTO.OrderDate,
+                    IsPaid = orderCreateDTO.IsPaid,
+                    Quantity = orderCreateDTO.Quantity,
+                    UserId = userId ?? string.Empty,
+                    prices = product.Price * orderCreateDTO.Quantity
+                };
+
+
+                await _orderRepository.CreateOrder(order);
+
+                var StockReduced = await ReduceStoke(orderCreateDTO.ProductId, orderCreateDTO.Quantity);
+
+                if (!StockReduced)
+                {
+                    return new ApiResponse<OrderResponseDTO>
+                    {
+                        Success = false,
+                        Message = "Unable to update product stock.",
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        Data = null
+                    };
+                }
+
+                var data = new OrderResponseDTO
+                {
+                    OrderId = order.OrderId,
+                    ProductId = order.ProductId,
+                    OrderDate = order.OrderDate,
+                    IsPaid = order.IsPaid,
+                    prices = order.prices,
+                    Quantity = order.Quantity,
+                    UserId = order.UserId
+                };
+
+
+                return new ApiResponse<OrderResponseDTO>
+                {
+                    Success = true,
+                    Message = "Order created successfully.",
+                    StatusCode = StatusCodes.Status200OK,
+                    Data = data
+                };
+            }
+            catch (Exception ex)
             {
                 return new ApiResponse<OrderResponseDTO>
                 {
                     Success = false,
-                    Message = "Product does not exist.",
-                    StatusCode = StatusCodes.Status404NotFound,
+                    Message = $"Product Service is currently unavailable.: {ex.Message}",
+                    StatusCode = StatusCodes.Status500InternalServerError,
                     Data = null
                 };
             }
-
-
-            if (orderCreateDTO.Quantity > product.ProductQuantity)
-            {
-                return new ApiResponse<OrderResponseDTO>
-                {
-                    Success = false,
-                    Message = "Requested quantity is greater than available stock.",
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Data = null
-                };
-            }
-
-           
-
-            var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new ApiResponse<OrderResponseDTO>
-                {
-                    Success = false,
-                    Message = "User identity not found.",
-                    StatusCode = StatusCodes.Status401Unauthorized,
-                    Data = null
-                };
-            }
-
-            var order = new OrderModel
-            {
-                ProductId = orderCreateDTO.ProductId,
-                OrderDate = orderCreateDTO.OrderDate,
-                IsPaid = orderCreateDTO.IsPaid,
-                Quantity = orderCreateDTO.Quantity,
-                UserId = userId ?? string.Empty
-            };
-
-
-            await _orderRepository.CreateOrder(order);
-
-            var StockReduced = await ReduceStoke(orderCreateDTO.ProductId, orderCreateDTO.Quantity);
-
-            if (!StockReduced)
-            {
-                return new ApiResponse<OrderResponseDTO>
-                {
-                    Success = false,
-                    Message = "Unable to update product stock.",
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Data = null
-                };
-            }
-
-            var data = new OrderResponseDTO
-            {
-                OrderId = order.OrderId,
-                ProductId = order.ProductId,
-                OrderDate = order.OrderDate,
-                IsPaid = order.IsPaid,
-                prices = product.Price * orderCreateDTO.Quantity,
-                Quantity = order.Quantity,
-                UserId= order.UserId
-            };
-
-
-            return new ApiResponse<OrderResponseDTO>
-            {
-                Success = true,
-                Message = "Order created successfully.",
-                StatusCode = StatusCodes.Status200OK,
-                Data = data
-            };
         }
         public async Task<ApiResponse<OrderResponseDTO>> UpdateOrder(OrderUpdateDTO orderUpdateDTO)
         {
@@ -272,33 +285,36 @@ namespace Order.Services
         }
         private async Task<ProductResponseDto?> GetProductFromProductService(int productId)
         {
-            var token = _httpContextAccessor.HttpContext?
-           .Request.Headers["Authorization"]
-            .FirstOrDefault();
+           
+                var token = _httpContextAccessor.HttpContext?
+             .Request.Headers["Authorization"]
+                .FirstOrDefault();
 
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"/api/Product/{productId}");
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    $"/api/Product/{productId}");
 
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.TryAddWithoutValidation(
-                    "Authorization",
-                    token);
-            }
+                if (!string.IsNullOrEmpty(token))
+                {
+                    request.Headers.TryAddWithoutValidation(
+                        "Authorization",
+                        token);
+                }
 
-            var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
 
-            var result =
-                await response.Content.ReadFromJsonAsync<
-                    ApiResponse<ProductResponseDto>>();
+                var result =
+                    await response.Content.ReadFromJsonAsync<
+                        ApiResponse<ProductResponseDto>>();
 
-            return result?.Data;
+                return result?.Data;
+            
+          
         }
 
         private async Task<bool> ReduceStoke(int productId, int quantity)

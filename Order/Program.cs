@@ -104,7 +104,7 @@ public partial class Program
         builder.Services.AddHttpClient("ProductService", client =>
         {
             client.BaseAddress = new Uri(productServiceUrl!);
-        });
+        }).AddStandardResilienceHandler();
 
         builder.Services.AddHttpContextAccessor();
 
