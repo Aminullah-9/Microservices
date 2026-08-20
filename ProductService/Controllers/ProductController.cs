@@ -61,6 +61,7 @@ namespace ProductService.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
+            await Task.Delay(10000);
             var response = await _productService.GetProductById(id);
 
             if (!response.Success)

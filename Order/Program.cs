@@ -99,38 +99,42 @@ public partial class Program
                 builder.Configuration.GetConnectionString("DefaultConnection")));
 
         // Register HttpClient
-        var productServiceUrl = builder.Configuration["ServiceUrls:ProductService"];
+        var productServiceUrl =
+    builder.Configuration["ServiceUrls:ProductService"];
 
-        builder.Services.AddHttpClient("ProductService", client =>
-        {
-            client.BaseAddress = new Uri(productServiceUrl!);
-        }).AddStandardResilienceHandler(options =>
-        {
-            options.Retry.MaxRetryAttempts = 3;
+        builder.Services
+     .AddHttpClient("ProductService", client =>
+     {
+         client.BaseAddress = new Uri(productServiceUrl!);
+     })
+     .AddStandardResilienceHandler(options =>
+     {
+         // Timeout
+         options.AttemptTimeout.Timeout =
+             TimeSpan.FromSeconds(5);
 
-            options.CircuitBreaker.SamplingDuration =
-                TimeSpan.FromSeconds(10);
+         // Retry
+         options.Retry.MaxRetryAttempts = 1;
 
-            options.CircuitBreaker.FailureRatio = 0.5;
+         // Circuit Breaker
+         options.CircuitBreaker.SamplingDuration =
+             TimeSpan.FromSeconds(30);
 
-            options.CircuitBreaker.MinimumThroughput = 5;
+         options.CircuitBreaker.FailureRatio = 0.5;
 
-            options.CircuitBreaker.BreakDuration =
-                TimeSpan.FromSeconds(30);
-        });
+         options.CircuitBreaker.MinimumThroughput = 2;
+
+         options.CircuitBreaker.BreakDuration =
+             TimeSpan.FromSeconds(20);
+     });
 
         builder.Services.AddHttpContextAccessor();
 
-        builder.Services.AddHttpClient("ProductService", client =>
-        {
-            client.BaseAddress = new Uri(productServiceUrl!);
-        });
         // Register Repository
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
         // Register Service
         builder.Services.AddScoped<IOrderService, OrderService>();
-
         // Swagger
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
@@ -169,7 +173,7 @@ public partial class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
-        app.MapControllers();
+         app.MapControllers();
 
         app.Run();
     }

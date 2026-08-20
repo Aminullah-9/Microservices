@@ -3,9 +3,11 @@ using Order.DTO;
 using Order.Model;
 using Order.Repository;
 using Order.Repository.Interfaces;
+using Polly.CircuitBreaker;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Polly.CircuitBreaker;
 
 namespace Order.Services
 {
@@ -203,6 +205,16 @@ namespace Order.Services
                     Data = null
                 };
             }
+            //catch (BrokenCircuitException)
+            //{
+            //    return new ApiResponse<OrderResponseDTO>
+            //    {
+            //        Success = false,
+            //        Message = "Product Service is temporarily unavailable. Please try again later.",
+            //        StatusCode = StatusCodes.Status503ServiceUnavailable,
+            //        Data = null
+            //    };
+            //}
         }
         public async Task<ApiResponse<OrderResponseDTO>> UpdateOrder(OrderUpdateDTO orderUpdateDTO)
         {
